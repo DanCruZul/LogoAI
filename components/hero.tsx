@@ -1,8 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Github } from "lucide-react";
-
 export default function HeroSection() {
   return (
     <section className="text-center mb-12 lg:mb-24">
