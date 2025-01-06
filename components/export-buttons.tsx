@@ -24,18 +24,6 @@ export default function ExportButtons({
           <Download className="mr-2 h-4 w-4" /> Export as PNG
         </Button>
       </a>
-      <a
-        href={imageUrl}
-        download="generated_logo.svg"
-        onClick={(e) => {
-          e.preventDefault();
-          handleExport("SVG");
-        }}
-      >
-        <Button>
-          <Download className="mr-2 h-4 w-4" /> Export as SVG
-        </Button>
-      </a>
     </div>
   );
 }

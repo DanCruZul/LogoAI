@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,33 +13,56 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateLogo } from "@/actions/logogen";
-import { Loader2 } from "lucide-react";
+import { Loader2, Edit2, Image as ImageIcon } from "lucide-react";
+import ImageEditor from "@/components/ui/image-editor";
+import { useToast } from "@/hooks/use-toast";
+import { Logo } from "@/db/schema";
+
+interface LogoGeneratorFormProps {
+  onImageGenerated: (imageUrl: string) => void;
+  onViewGallery: () => void;
+  onLogoSaved: () => void;
+  editingLogo: Logo | null;
+}
 
 export default function LogoGeneratorForm({
   onImageGenerated,
-}: {
-  onImageGenerated: (imageUrl: string) => void;
-}) {
+  onViewGallery,
+  onLogoSaved,
+  editingLogo,
+}: LogoGeneratorFormProps) {
   const [prompt, setPrompt] = useState("");
   const [context, setContext] = useState("default");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (editingLogo) {
+      setPrompt(editingLogo.prompt);
+      setImageUrl(editingLogo.url);
+    }
+  }, [editingLogo]);
 
   const handleGenerate = async () => {
     setErrorMessage("");
     setIsLoading(true);
     try {
       const response = await generateLogo(prompt, name);
-      if (response.status === 200) {
-        const newImageUrl = `data:image/png;base64,${response.image}`;
-        setImageUrl(newImageUrl);
-        onImageGenerated(newImageUrl);
-      } else if (response.status === 429) {
-        setErrorMessage("Too many requests. Please try again later.");
+      if (response.status === "success") {
+        setImageUrl(response.data.url);
+        onImageGenerated(response.data.url);
+        onLogoSaved();
+
+        toast({
+          title: "Logo generated and saved",
+          description: "Your logo has been generated and saved to the gallery.",
+        });
       } else {
-        setErrorMessage(`Error generating logo: ${response.error}`);
+        setErrorMessage(response.message);
       }
     } catch (error) {
       setErrorMessage("An unexpected error occurred");
@@ -58,6 +83,13 @@ export default function LogoGeneratorForm({
             height={300}
             className="w-full h-full object-contain"
           />
+          <Button
+            onClick={() => setIsEditing(true)}
+            className="absolute top-2 right-2"
+            size="sm"
+          >
+            <Edit2 className="mr-2 h-4 w-4" /> Edit
+          </Button>
         </div>
       );
     }
@@ -86,6 +118,12 @@ export default function LogoGeneratorForm({
       default:
         return {};
     }
+  };
+
+  const handleSaveEdit = (editedImageUrl: string) => {
+    setImageUrl(editedImageUrl);
+    onImageGenerated(editedImageUrl);
+    setIsEditing(false);
   };
 
   return (
@@ -128,6 +166,10 @@ export default function LogoGeneratorForm({
               "Generate Logo"
             )}
           </Button>
+          <Button onClick={onViewGallery} variant="outline" className="w-full">
+            <ImageIcon className="mr-2 h-4 w-4" />
+            View Gallery
+          </Button>
           {errorMessage && (
             <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
               <p className="font-bold">Error:</p>
@@ -151,7 +193,7 @@ export default function LogoGeneratorForm({
           </div>
           <div
             className="bg-card/45 border-2 border-border rounded-lg p-4 flex items-center
-              justify-center aspect-video"
+              justify-center aspect-video relative"
           >
             {isLoading ? (
               <div className="col-span-2 flex flex-col items-center justify-center">
@@ -166,6 +208,13 @@ export default function LogoGeneratorForm({
           </div>
         </div>
       </div>
+      {isEditing && imageUrl && (
+        <ImageEditor
+          imageUrl={imageUrl}
+          onClose={() => setIsEditing(false)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 }

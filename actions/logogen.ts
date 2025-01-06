@@ -26,9 +26,15 @@ export async function generateLogo(prompt: string, name?: string) {
 
     console.log("Sending request to Hugging Face with prompt:", fullPrompt);
 
+    // Use FLUX.1 [schnell] model for image generation
     const response = await hf.textToImage({
       model: "black-forest-labs/FLUX.1-schnell",
       inputs: fullPrompt,
+      options: {
+        seed: randomSeed,
+        num_inference_steps: 50, // Adjust if necessary for quality
+        guidance_scale: 7.5, // Adjust to control creativity vs fidelity
+      },
     });
 
     console.log("Received response from Hugging Face");
@@ -42,6 +48,7 @@ export async function generateLogo(prompt: string, name?: string) {
     }
   } catch (error) {
     console.error("Detailed error in generateLogo:", error);
+
     if (error instanceof Error) {
       if (error.message.includes("Rate limit reached")) {
         console.error("Rate limit error details:", error);
